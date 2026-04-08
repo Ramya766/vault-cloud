@@ -6,11 +6,11 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 const JWT_SECRET = process.env.JWT_SECRET;
-const DATABASE_URL = process.env.DATABASE_URL;
 
-// Middleware
+// ─── CORS Configuration ─────────────────────────────────────────────────────
+// Build the allowed origins list dynamically
 const allowedOrigins = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -19,6 +19,11 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ];
+
+// Add the Azure Static Web App URL if configured
+if (process.env.AZURE_STATIC_WEB_APP_URL) {
+  allowedOrigins.push(process.env.AZURE_STATIC_WEB_APP_URL);
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -63,16 +68,44 @@ const PRICING = {
 
 let pool;
 
-// Initialize database
+// ─── Database Initialization ─────────────────────────────────────────────────
+// Supports BOTH formats:
+//   1. Individual env vars: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
+//   2. Legacy DATABASE_URL: mysql://user:pass@host:port/dbname
 async function initDb() {
-  // Parse the DATABASE_URL into mysql2 connection options
-  const url = new URL(DATABASE_URL);
+  let connectionConfig;
+
+  if (process.env.DB_HOST) {
+    // ── Azure / Docker Compose style (individual env vars) ──
+    connectionConfig = {
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT, 10) || 3306,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+    };
+
+    // Azure MySQL Flexible Server requires SSL in production
+    if (process.env.NODE_ENV === "production" && process.env.DB_SSL !== "false") {
+      connectionConfig.ssl = { rejectUnauthorized: true };
+    }
+  } else if (process.env.DATABASE_URL) {
+    // ── Legacy DATABASE_URL format ──
+    const url = new URL(process.env.DATABASE_URL);
+    connectionConfig = {
+      host: url.hostname,
+      port: url.port || 3306,
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: url.pathname.replace("/", ""),
+    };
+  } else {
+    console.error("❌ No database configuration found. Set DB_HOST or DATABASE_URL.");
+    process.exit(1);
+  }
+
   pool = mysql.createPool({
-    host: url.hostname,
-    port: url.port || 3306,
-    user: decodeURIComponent(url.username),
-    password: decodeURIComponent(url.password),
-    database: url.pathname.replace("/", ""),
+    ...connectionConfig,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -146,6 +179,27 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+
+// ─── HEALTH CHECK ─────────────────────────────────────────────────────────────
+
+app.get("/health", async (req, res) => {
+  try {
+    // Verify DB is reachable
+    await pool.execute("SELECT 1");
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || "development",
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "error",
+      message: "Database connection failed",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
 // ─── AUTH ROUTES ──────────────────────────────────────────────────────────────
 

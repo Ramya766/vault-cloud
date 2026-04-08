@@ -11,6 +11,7 @@ import {
   Legend,
 } from "chart.js";
 import axios from "axios";
+import API_BASE from "../config";
 
 ChartJS.register(
   CategoryScale,
@@ -21,8 +22,6 @@ ChartJS.register(
   Tooltip,
   Legend,
 );
-
-const API_BASE = "http://localhost:5000";
 
 function MonthlyHistory() {
   const [history, setHistory] = useState([]);

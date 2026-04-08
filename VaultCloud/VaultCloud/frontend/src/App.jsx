@@ -10,8 +10,7 @@ import ServicesTable from "./components/ServicesTable";
 import BudgetPanel from "./components/BudgetPanel";
 import MonthlyHistory from "./components/MonthlyHistory";
 import ProtectedRoute from "./components/ProtectedRoute";
-
-const API_BASE = "http://localhost:5000";
+import API_BASE from "./config";
 
 function App() {
   const [services, setServices] = useState([]);

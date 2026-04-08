@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-
-const API_BASE = "http://localhost:5000";
+import API_BASE from "../config";
 
 function BudgetPanel() {
   const [budgets, setBudgets] = useState({});
