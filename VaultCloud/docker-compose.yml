@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  # ─── Backend (Node.js / Express) ────────────────────────────────────────────
+  # Connects to Azure MySQL Flexible Server via env vars in backend/.env
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vaultcloud-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+
+  # ─── Frontend (React / Vite + nginx) ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8080
+    container_name: vaultcloud-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
