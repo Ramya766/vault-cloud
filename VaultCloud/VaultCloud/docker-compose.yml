@@ -1,0 +1,74 @@
+version: "3.8"
+
+services:
+  # ─── MySQL Database ──────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8
+    container_name: vaultcloud-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-vaultcloud}
+      MYSQL_USER: ${DB_USER:-vaultuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-vaultpass}
+    ports:
+      - "3307:3306"   # Host port 3307 to avoid conflict with local MySQL
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - vaultcloud-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ─── Backend (Node.js / Express) ────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vaultcloud-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      NODE_ENV: development
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-vaultuser}
+      DB_PASSWORD: ${DB_PASSWORD:-vaultpass}
+      DB_NAME: ${DB_NAME:-vaultcloud}
+      JWT_SECRET: ${JWT_SECRET:-vaultcloud_super_secret_key_2024}
+      AZURE_STATIC_WEB_APP_URL: ${AZURE_STATIC_WEB_APP_URL:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - vaultcloud-network
+
+  # ─── Frontend (React / Vite + nginx) ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vaultcloud-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - vaultcloud-network
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+    driver: local
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  vaultcloud-network:
+    driver: bridge
