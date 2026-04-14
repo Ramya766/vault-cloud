@@ -1,7 +1,0 @@
-backend/.env
-backend/data/
-node_modules/
-dist/
-.env.local
-.env.*.local
-docker-compose.override.yml
