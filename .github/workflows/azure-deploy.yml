@@ -36,17 +36,27 @@ jobs:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Validate required secrets
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          ACR_NAME_SECRET: ${{ secrets.ACR_NAME }}
+          ACR_LOGIN_SERVER_SECRET: ${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_USERNAME_SECRET: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD_SECRET: ${{ secrets.ACR_PASSWORD }}
+          AZURE_RESOURCE_GROUP_SECRET: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          AZURE_BACKEND_WEBAPP_NAME_SECRET: ${{ secrets.AZURE_BACKEND_WEBAPP_NAME }}
+          AZURE_FRONTEND_WEBAPP_NAME_SECRET: ${{ secrets.AZURE_FRONTEND_WEBAPP_NAME }}
+          VITE_API_URL_PROD_SECRET: ${{ secrets.VITE_API_URL_PROD }}
         run: |
           set -e
-          test -n "${{ secrets.AZURE_CREDENTIALS }}"
-          test -n "${{ secrets.ACR_NAME }}"
-          test -n "${{ secrets.ACR_LOGIN_SERVER }}"
-          test -n "${{ secrets.ACR_USERNAME }}"
-          test -n "${{ secrets.ACR_PASSWORD }}"
-          test -n "${{ secrets.AZURE_RESOURCE_GROUP }}"
-          test -n "${{ secrets.AZURE_BACKEND_WEBAPP_NAME }}"
-          test -n "${{ secrets.AZURE_FRONTEND_WEBAPP_NAME }}"
-          test -n "${{ secrets.VITE_API_URL_PROD }}"
+          [ -n "$AZURE_CREDENTIALS" ]
+          [ -n "$ACR_NAME_SECRET" ]
+          [ -n "$ACR_LOGIN_SERVER_SECRET" ]
+          [ -n "$ACR_USERNAME_SECRET" ]
+          [ -n "$ACR_PASSWORD_SECRET" ]
+          [ -n "$AZURE_RESOURCE_GROUP_SECRET" ]
+          [ -n "$AZURE_BACKEND_WEBAPP_NAME_SECRET" ]
+          [ -n "$AZURE_FRONTEND_WEBAPP_NAME_SECRET" ]
+          [ -n "$VITE_API_URL_PROD_SECRET" ]
 
       - name: Azure login
         uses: azure/login@v2
