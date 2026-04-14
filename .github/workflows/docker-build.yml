@@ -1,0 +1,40 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "VaultCloud/VaultCloud/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "VaultCloud/VaultCloud/**"
+      - ".github/workflows/**"
+
+jobs:
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./VaultCloud/VaultCloud/backend
+          file: ./VaultCloud/VaultCloud/backend/Dockerfile
+          push: false
+          tags: vaultcloud-backend:ci
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./VaultCloud/VaultCloud/frontend
+          file: ./VaultCloud/VaultCloud/frontend/Dockerfile
+          push: false
+          tags: vaultcloud-frontend:ci
