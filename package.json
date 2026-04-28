@@ -1,0 +1,9 @@
+{
+  "name": "vaultcloud-azure-root",
+  "version": "1.0.0",
+  "description": "Root package.json to deploy the backend on Azure App Service Node Runtime",
+  "scripts": {
+    "install": "cd VaultCloud/VaultCloud/backend && npm install",
+    "start": "cd VaultCloud/VaultCloud/backend && node src/server.js"
+  }
+}
